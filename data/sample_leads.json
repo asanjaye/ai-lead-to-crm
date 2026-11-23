@@ -1,0 +1,252 @@
+[
+  {
+    "id": 1,
+    "name": "Sarah Chen",
+    "email": "sarah.chen@techstartup.io",
+    "company": "TechStartup Inc",
+    "message": "Hi, we're a Series A startup with 50 employees and desperately need to automate our lead qualification process. We're currently losing 20+ hours per week on manual review. I'm the VP of Sales and have budget approved for Q1. Can we schedule a call this week to discuss implementation? Our CTO is also interested in the technical details.",
+    "expected_classification": "hot",
+    "expected_intent": "purchase inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 2,
+    "name": "Michael Rodriguez",
+    "email": "m.rodriguez@enterprise.com",
+    "company": "Enterprise Solutions Corp",
+    "message": "Our company (Fortune 500, 10,000+ employees) is evaluating automation solutions for our sales pipeline. We've shortlisted three vendors and you're one of them. The decision will be made by our procurement team within the next 30 days. What's your enterprise pricing and do you offer SOC 2 compliance?",
+    "expected_classification": "hot",
+    "expected_intent": "enterprise pricing inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 3,
+    "name": "Jennifer Walsh",
+    "email": "jwalsh@consulting.biz",
+    "company": "Walsh Consulting",
+    "message": "I saw your demo at the SaaS conference last month. We're a boutique consulting firm and have a few clients who might benefit from this. I'd like to understand more about your partner program and whether you offer white-label solutions. Not urgent, but let's connect when you have time.",
+    "expected_classification": "warm",
+    "expected_intent": "partnership inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 4,
+    "name": "David Kim",
+    "email": "dkim@midmarket.co",
+    "company": "MidMarket Solutions",
+    "message": "Interesting product! We're currently using a competitor but always open to exploring alternatives. Could you send over some case studies and pricing information? We won't be making any changes until next fiscal year, but I want to have options ready.",
+    "expected_classification": "warm",
+    "expected_intent": "competitive evaluation",
+    "source": "web_form"
+  },
+  {
+    "id": 5,
+    "name": "Emily Thompson",
+    "email": "emily.t@example-mail.net",
+    "company": null,
+    "message": "Hey, I'm an independent marketer and stumbled upon your site. This looks cool but probably overkill for my needs. Do you have a free tier or a very basic plan for individual users? Just curious about the technology behind it.",
+    "expected_classification": "cold",
+    "expected_intent": "pricing inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 6,
+    "name": "Robert Johnson",
+    "email": "rjohnson@university.edu",
+    "company": "State University",
+    "message": "I'm a professor researching AI applications in business. Would it be possible to get access to your platform for academic research purposes? We're writing a paper on automated lead scoring systems.",
+    "expected_classification": "cold",
+    "expected_intent": "academic research",
+    "source": "web_form"
+  },
+  {
+    "id": 7,
+    "name": "Lisa Martinez",
+    "email": "lisa@realestate.com",
+    "company": "Premier Real Estate",
+    "message": "URGENT: We're launching a new property development next month and need a lead management system ASAP. We expect 500+ inquiries in the first week. Budget is not an issue. Who can I talk to TODAY about getting this set up?",
+    "expected_classification": "hot",
+    "expected_intent": "urgent implementation request",
+    "source": "web_form"
+  },
+  {
+    "id": 8,
+    "name": "Alex Petrov",
+    "email": "apetrov@startup.vc",
+    "company": "Startup Ventures",
+    "message": "I'm an analyst at a VC firm and we're doing due diligence on companies in the sales automation space. This isn't a sales inquiry - I'm just trying to understand your market positioning and growth trajectory. Would someone from your leadership team be available for a 15-minute call?",
+    "expected_classification": "cold",
+    "expected_intent": "market research",
+    "source": "web_form"
+  },
+  {
+    "id": 9,
+    "name": "Amanda Foster",
+    "email": "amanda@digitalagency.io",
+    "company": "Digital Agency Pro",
+    "message": "We're a digital marketing agency managing campaigns for 30+ clients. Several of them have asked about lead automation. If we bring you qualified leads, what kind of referral commission do you offer? Also interested in becoming a certified implementation partner.",
+    "expected_classification": "warm",
+    "expected_intent": "partnership/referral inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 10,
+    "name": "Chris Brown",
+    "email": "chris.b@smallbiz.local",
+    "company": "Chris's Auto Shop",
+    "message": "hi i saw ur ad on facebook. how much does it cost? is there a monthly fee? we r a small auto repair shop with 3 employees not sure if we need something like this but my friend said i should check it out",
+    "expected_classification": "cold",
+    "expected_intent": "general pricing inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 11,
+    "name": "Dr. James Wilson",
+    "email": "jwilson@medicalgroup.org",
+    "company": "Wilson Medical Group",
+    "message": "We're a network of 12 medical practices looking to streamline patient intake and referral management. HIPAA compliance is mandatory. We have IT staff who can handle integration. Currently spending $15k/month on manual processes. Looking to implement within 60 days.",
+    "expected_classification": "hot",
+    "expected_intent": "healthcare implementation inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 12,
+    "name": "Maria Gonzalez",
+    "email": "maria@nonprofit.org",
+    "company": "Community Helpers Nonprofit",
+    "message": "Hello! We're a small nonprofit trying to manage donor inquiries more efficiently. Our budget is very limited (we operate on donations). Do you offer any nonprofit discounts or pro bono services? We'd really appreciate any help.",
+    "expected_classification": "cold",
+    "expected_intent": "nonprofit discount inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 13,
+    "name": "Tom Stevens",
+    "email": "tstevens@lawfirm.legal",
+    "company": "Stevens & Associates Law Firm",
+    "message": "Our law firm receives 100+ case inquiries per week. We need to automatically categorize them by practice area and urgency, then route to the appropriate attorney. What's your experience with legal industry clients? Do you have any case studies from law firms?",
+    "expected_classification": "warm",
+    "expected_intent": "industry-specific inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 14,
+    "name": "Super Deals Bot",
+    "email": "deals@cheap-meds-online.xyz",
+    "company": null,
+    "message": "AMAZING OPPORTUNITY!!! Make $5000 per day working from home! Click here to learn our secret method! Limited time offer! Act now! Visit www.totally-not-a-scam.biz for more info!!!",
+    "expected_classification": "spam",
+    "expected_intent": "spam/scam",
+    "source": "web_form"
+  },
+  {
+    "id": 15,
+    "name": "Kevin Park",
+    "email": "kevin.park@jobseeker.me",
+    "company": null,
+    "message": "Dear Hiring Manager, I am writing to express my interest in any open positions at your company. I have 5 years of experience in sales and marketing. Please find my resume attached. I am available for an interview at your earliest convenience.",
+    "expected_classification": "spam",
+    "expected_intent": "job application",
+    "source": "web_form"
+  },
+  {
+    "id": 16,
+    "name": "Rachel Green",
+    "email": "rgreen@fashion.retail",
+    "company": "Fashion Forward Retail",
+    "message": "We run 25 retail locations and our online store gets about 2000 orders per day. Customer service is overwhelmed with order status inquiries. Can your system help categorize and auto-respond to common questions while flagging complex issues for human review?",
+    "expected_classification": "hot",
+    "expected_intent": "customer service automation inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 17,
+    "name": "Hassan Ahmed",
+    "email": "h.ahmed@techcorp.global",
+    "company": "TechCorp Global",
+    "message": "Our team evaluated your product 6 months ago and decided to go with a competitor. However, that solution hasn't met our expectations. We're now reconsidering. What's changed in your product since January? Any new features for enterprise customers?",
+    "expected_classification": "warm",
+    "expected_intent": "re-evaluation inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 18,
+    "name": "Newsletter Signup",
+    "email": "test123@tempmail.com",
+    "company": null,
+    "message": "asdfasdf just testing",
+    "expected_classification": "spam",
+    "expected_intent": "test/junk submission",
+    "source": "web_form"
+  },
+  {
+    "id": 19,
+    "name": "Sophie Laurent",
+    "email": "sophie@eurostartup.eu",
+    "company": "EuroStartup GmbH",
+    "message": "Bonjour! We are a Berlin-based startup expanding to the US market. We need a lead management system that works across time zones and supports multiple languages. GDPR compliance is essential for our EU operations. Can you handle international requirements?",
+    "expected_classification": "warm",
+    "expected_intent": "international/compliance inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 20,
+    "name": "Mark Thompson",
+    "email": "mark@seo-services-unlimited.biz",
+    "company": "SEO Services Unlimited",
+    "message": "Hi there! I noticed your website could use some SEO improvements. We specialize in getting businesses to the top of Google search results. Would you be interested in a free website audit? Reply YES to get started!",
+    "expected_classification": "spam",
+    "expected_intent": "unsolicited sales pitch",
+    "source": "web_form"
+  },
+  {
+    "id": 21,
+    "name": "Diana Ross",
+    "email": "dross@insurance.co",
+    "company": "National Insurance Partners",
+    "message": "We're an insurance brokerage processing 500+ quote requests daily across auto, home, and life insurance. Each type needs different handling and follow-up sequences. I'm the Director of Operations and have been tasked with finding an automation solution by end of quarter.",
+    "expected_classification": "hot",
+    "expected_intent": "insurance automation inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 22,
+    "name": "Student Researcher",
+    "email": "student2024@gmail.com",
+    "company": null,
+    "message": "Hello, I'm a computer science student working on my thesis about AI in business applications. I was wondering if you could answer some questions about how your AI classification system works? This is purely for academic purposes.",
+    "expected_classification": "cold",
+    "expected_intent": "student research",
+    "source": "web_form"
+  },
+  {
+    "id": 23,
+    "name": "Patricia Miller",
+    "email": "pmiller@accounting.firm",
+    "company": "Miller & Associates CPAs",
+    "message": "Tax season is brutal for us - we get hundreds of inquiries from potential new clients in January through April. By the time we respond, many have gone elsewhere. I need something that can at least acknowledge receipt and gather basic info automatically. What would something like that cost?",
+    "expected_classification": "warm",
+    "expected_intent": "seasonal automation inquiry",
+    "source": "web_form"
+  },
+  {
+    "id": 24,
+    "name": "Support Ticket",
+    "email": "admin@competitor-product.io",
+    "company": "Competitor Product Inc",
+    "message": "I'm a product manager at [Competitor]. We're conducting competitive analysis and I'd like to request a demo of your product. Please don't add me to any marketing lists.",
+    "expected_classification": "cold",
+    "expected_intent": "competitive intelligence",
+    "source": "web_form"
+  },
+  {
+    "id": 25,
+    "name": "George Williams",
+    "email": "gwilliams@manufacturing.ind",
+    "company": "Williams Manufacturing",
+    "message": "We're a 75-year-old manufacturing company finally modernizing our sales process. Currently everything is on paper and spreadsheets. We've got budget allocated and executive buy-in, but we need a lot of hand-holding during implementation. Do you offer professional services or just the software?",
+    "expected_classification": "hot",
+    "expected_intent": "digital transformation inquiry",
+    "source": "web_form"
+  }
+]

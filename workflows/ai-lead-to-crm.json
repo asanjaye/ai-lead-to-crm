@@ -1,0 +1,675 @@
+{
+  "name": "AI Lead-to-CRM Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "lead-intake-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate incoming lead data\nconst body = $input.first().json.body || $input.first().json;\n\nconst errors = [];\n\nif (!body.name || body.name.trim().length === 0) {\n  errors.push('Name is required');\n}\n\nif (!body.email || !body.email.match(/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/)) {\n  errors.push('Valid email is required');\n}\n\nif (!body.message || body.message.trim().length < 10) {\n  errors.push('Message must be at least 10 characters');\n}\n\nif (errors.length > 0) {\n  return [{\n    json: {\n      valid: false,\n      errors: errors,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    lead: {\n      name: body.name.trim(),\n      email: body.email.trim().toLowerCase(),\n      company: body.company?.trim() || null,\n      message: body.message.trim(),\n      source: body.source || 'webhook',\n      received_at: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "id": "validate-input",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "validation-check",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, errors: $json.errors }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "validation-error-response",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [910, 440]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "leads",
+        "columns": "name, email, company, message, source, status",
+        "options": {
+          "queryBatching": "single"
+        }
+      },
+      "id": "insert-lead",
+      "name": "Insert Lead to DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [910, 160],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://lead-classifier:8001/classify",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead\": {\n    \"name\": \"{{ $json.lead.name }}\",\n    \"email\": \"{{ $json.lead.email }}\",\n    \"company\": {{ $json.lead.company ? '\"' + $json.lead.company + '\"' : 'null' }},\n    \"message\": \"{{ $json.lead.message.replace(/\"/g, '\\\\\"').replace(/\\n/g, '\\\\n') }}\",\n    \"source\": \"{{ $json.lead.source }}\"\n  },\n  \"include_draft_reply\": true\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "classify-lead",
+      "name": "AI Classification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1130, 160],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "leads",
+        "columns": "classification, intent, summary, confidence_score, draft_subject, draft_reply, status, processed_at",
+        "updateKey": "id",
+        "options": {}
+      },
+      "id": "update-classification",
+      "name": "Update Lead Classification",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1350, 160],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.classification.classification }}",
+              "operation": "notEquals",
+              "value2": "spam"
+            }
+          ]
+        }
+      },
+      "id": "spam-filter",
+      "name": "Not Spam?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1570, 160]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "approval_queue",
+        "columns": "lead_id, request_type, priority, draft_subject, draft_body, callback_webhook_url, callback_execution_id",
+        "options": {}
+      },
+      "id": "queue-for-approval",
+      "name": "Queue for Human Approval",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1790, 60],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "leads",
+        "columns": "status",
+        "updateKey": "id",
+        "options": {}
+      },
+      "id": "update-status-awaiting",
+      "name": "Set Awaiting Approval",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2010, 60],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "processing_log",
+        "columns": "lead_id, action, status, details, workflow_execution_id",
+        "options": {}
+      },
+      "id": "log-spam",
+      "name": "Log Spam Detection",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1790, 280],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "processing_log",
+        "columns": "lead_id, action, status, details, workflow_execution_id",
+        "options": {}
+      },
+      "id": "log-success",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [2230, 60],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, lead_id: $('Insert Lead to DB').first().json.id, classification: $('AI Classification').first().json.classification.classification, status: 'queued_for_approval' }) }}",
+        "options": {}
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2450, 60]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, lead_id: $('Insert Lead to DB').first().json.id, classification: 'spam', status: 'filtered' }) }}",
+        "options": {}
+      },
+      "id": "spam-response",
+      "name": "Spam Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2010, 280]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "error_log",
+        "columns": "lead_id, error_type, error_message, workflow_name, execution_id, is_retryable",
+        "options": {}
+      },
+      "id": "log-error",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1350, 380],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "leads",
+        "columns": "status, error_message, retry_count, last_error_at",
+        "updateKey": "id",
+        "options": {}
+      },
+      "id": "update-lead-error",
+      "name": "Update Lead Error Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1570, 380],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"⚠️ Lead Processing Error\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": {\n        \"type\": \"plain_text\",\n        \"text\": \"⚠️ Lead Processing Failed\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Lead ID:*\\n{{ $('Insert Lead to DB').first().json.id }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Email:*\\n{{ $('Validate Input').first().json.lead.email }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Error:*\\n```{{ $json.error || 'Classification service error' }}```\"\n      }\n    }\n  ]\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "notify-error-slack",
+      "name": "Notify Error (Slack)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1790, 380],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Processing failed, will retry', lead_id: $('Insert Lead to DB').first().json.id }) }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2010, 380]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "approval-callback",
+        "options": {}
+      },
+      "id": "approval-webhook",
+      "name": "Approval Callback Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 600],
+      "webhookId": "approval-callback-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.status }}",
+              "value2": "approved"
+            }
+          ]
+        }
+      },
+      "id": "approval-check",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [470, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare email for sending\nconst approval = $input.first().json.body;\n\n// In a real implementation, this would integrate with\n// an email service like SendGrid, Mailgun, or SMTP\n\nreturn [{\n  json: {\n    to: approval.lead_email || 'recipient@example.com',\n    subject: approval.subject,\n    body: approval.body,\n    lead_id: approval.lead_id,\n    approved_by: approval.reviewer,\n    // Flag: This is where the email would be sent\n    // For demo, we just log it\n    email_sent: false,\n    note: 'Email sending not implemented in demo - would integrate with SendGrid/Mailgun'\n  }\n}];"
+      },
+      "id": "prepare-email",
+      "name": "Prepare Email (Demo)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [690, 500]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "leads",
+        "columns": "status",
+        "updateKey": "id",
+        "options": {}
+      },
+      "id": "update-sent-status",
+      "name": "Update Sent Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [910, 500],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "leads",
+        "columns": "status, rejection_reason",
+        "updateKey": "id",
+        "options": {}
+      },
+      "id": "update-rejected-status",
+      "name": "Update Rejected Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [690, 720],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "processing_log",
+        "columns": "lead_id, action, status, details",
+        "options": {}
+      },
+      "id": "log-rejection",
+      "name": "Log Rejection",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [910, 720],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-leads",
+          "name": "Postgres Leads DB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Lead Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Insert Lead to DB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Lead to DB": {
+      "main": [
+        [
+          {
+            "node": "AI Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Classification": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Classification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead Classification": {
+      "main": [
+        [
+          {
+            "node": "Not Spam?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not Spam?": {
+      "main": [
+        [
+          {
+            "node": "Queue for Human Approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Spam Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue for Human Approval": {
+      "main": [
+        [
+          {
+            "node": "Set Awaiting Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Awaiting Approval": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Success": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Spam Detection": {
+      "main": [
+        [
+          {
+            "node": "Spam Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Error": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Error Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead Error Status": {
+      "main": [
+        [
+          {
+            "node": "Notify Error (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Error (Slack)": {
+      "main": [
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Callback Webhook": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Email (Demo)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Rejected Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email (Demo)": {
+      "main": [
+        [
+          {
+            "node": "Update Sent Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Rejected Status": {
+      "main": [
+        [
+          {
+            "node": "Log Rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "errorWorkflow": "",
+    "timezone": "America/New_York"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "lead-management"
+    },
+    {
+      "name": "ai-automation"
+    },
+    {
+      "name": "demo"
+    }
+  ],
+  "meta": {
+    "instanceId": "demo-instance",
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {}
+}

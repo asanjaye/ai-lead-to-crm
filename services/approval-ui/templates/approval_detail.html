@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Review Lead - {{ approval.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Back Link -->
+    <a href="/" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Back to Dashboard
+    </a>
+    
+    <!-- Lead Information Card -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-900">{{ approval.name }}</h1>
+                    <p class="text-sm text-gray-500">{{ approval.email }}</p>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border classification-{{ approval.classification }}">
+                    {{ approval.classification|upper }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="px-6 py-4 space-y-4">
+            {% if approval.company %}
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">Company</h3>
+                <p class="mt-1 text-gray-900">{{ approval.company }}</p>
+            </div>
+            {% endif %}
+            
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">Intent</h3>
+                <p class="mt-1 text-gray-900">{{ approval.intent }}</p>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">AI Summary</h3>
+                <p class="mt-1 text-gray-900">{{ approval.summary }}</p>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">Original Message</h3>
+                <div class="mt-1 p-4 bg-gray-50 rounded-lg">
+                    <p class="text-gray-700 whitespace-pre-wrap">{{ approval.message }}</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-6 text-sm text-gray-500">
+                <span>Confidence: {{ '%.0f'|format(approval.confidence_score * 100) if approval.confidence_score else 'N/A' }}%</span>
+                <span>Received: {{ approval.created_at.strftime('%Y-%m-%d %H:%M') if approval.created_at else 'N/A' }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Draft Reply Card -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">AI-Generated Draft Reply</h2>
+            <p class="text-sm text-gray-500">Review, edit if needed, then approve or reject</p>
+        </div>
+        
+        <form id="approvalForm" class="px-6 py-4 space-y-4">
+            <div>
+                <label for="edited_subject" class="block text-sm font-medium text-gray-700">Subject</label>
+                <input type="text" 
+                       name="edited_subject" 
+                       id="edited_subject" 
+                       value="{{ approval.draft_subject }}"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+            </div>
+            
+            <div>
+                <label for="edited_body" class="block text-sm font-medium text-gray-700">Email Body</label>
+                <textarea name="edited_body" 
+                          id="edited_body" 
+                          rows="12"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">{{ approval.draft_body }}</textarea>
+            </div>
+            
+            <div>
+                <label for="reviewer_name" class="block text-sm font-medium text-gray-700">Your Name</label>
+                <input type="text" 
+                       name="reviewer_name" 
+                       id="reviewer_name" 
+                       value="Human Reviewer"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+            </div>
+        </form>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between rounded-b-lg">
+            <button type="button" 
+                    onclick="showRejectModal()"
+                    class="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Reject
+            </button>
+            
+            <button type="button" 
+                    onclick="submitApproval()"
+                    class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Approve & Queue for Sending
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Modal -->
+<div id="rejectModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Reject Reply</h3>
+        </div>
+        <form id="rejectForm" action="/approval/{{ approval.approval_id }}/reject" method="POST" class="px-6 py-4">
+            <input type="hidden" name="reviewer_name" id="reject_reviewer_name">
+            <div>
+                <label for="rejection_reason" class="block text-sm font-medium text-gray-700">Reason for Rejection</label>
+                <textarea name="rejection_reason" 
+                          id="rejection_reason" 
+                          rows="3" 
+                          required
+                          placeholder="Please provide a reason..."
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2"></textarea>
+            </div>
+        </form>
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3 rounded-b-lg">
+            <button type="button" 
+                    onclick="hideRejectModal()"
+                    class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </button>
+            <button type="submit" 
+                    form="rejectForm"
+                    class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+                Confirm Rejection
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function submitApproval() {
+    const form = document.getElementById('approvalForm');
+    const formData = new FormData(form);
+    
+    const submitForm = document.createElement('form');
+    submitForm.method = 'POST';
+    submitForm.action = '/approval/{{ approval.approval_id }}/approve';
+    
+    for (const [key, value] of formData.entries()) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        submitForm.appendChild(input);
+    }
+    
+    document.body.appendChild(submitForm);
+    submitForm.submit();
+}
+
+function showRejectModal() {
+    document.getElementById('reject_reviewer_name').value = document.getElementById('reviewer_name').value;
+    document.getElementById('rejectModal').classList.remove('hidden');
+    document.getElementById('rejectModal').classList.add('flex');
+}
+
+function hideRejectModal() {
+    document.getElementById('rejectModal').classList.add('hidden');
+    document.getElementById('rejectModal').classList.remove('flex');
+}
+</script>
+{% endblock %}

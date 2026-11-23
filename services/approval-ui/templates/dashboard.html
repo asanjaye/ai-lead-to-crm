@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Lead Approval Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Pending Approvals</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ pending_count }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Approved Today</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ approved_today }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Hot Leads (7d)</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ stats.get('hot', 0) }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Leads (7d)</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ stats.values()|sum }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications -->
+    {% if request.query_params.get('approved') %}
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div class="flex">
+            <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            <p class="ml-3 text-sm font-medium text-green-800">Lead reply approved successfully!</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if request.query_params.get('rejected') %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex">
+            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <p class="ml-3 text-sm font-medium text-red-800">Lead reply rejected.</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Pending Approvals List -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Pending Approvals</h2>
+            <p class="text-sm text-gray-500">Review and approve AI-generated replies before sending</p>
+        </div>
+        
+        {% if pending_approvals %}
+        <ul class="divide-y divide-gray-200">
+            {% for approval in pending_approvals %}
+            <li class="p-6 hover:bg-gray-50 transition-colors">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="text-lg font-medium text-gray-900 truncate">{{ approval.name }}</h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border classification-{{ approval.classification }}">
+                                {{ approval.classification|upper }}
+                            </span>
+                            <span class="text-sm text-gray-500">{{ approval.email }}</span>
+                        </div>
+                        {% if approval.company %}
+                        <p class="mt-1 text-sm text-gray-600">{{ approval.company }}</p>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-700">
+                            <strong>Intent:</strong> {{ approval.intent }}
+                        </p>
+                        <p class="mt-1 text-sm text-gray-600">{{ approval.summary }}</p>
+                        <p class="mt-2 text-xs text-gray-400">
+                            Received: {{ approval.created_at.strftime('%Y-%m-%d %H:%M') if approval.created_at else 'N/A' }}
+                            | Confidence: {{ '%.0f'|format(approval.confidence_score * 100) if approval.confidence_score else 'N/A' }}%
+                        </p>
+                    </div>
+                    <div class="ml-4">
+                        <a href="/approval/{{ approval.approval_id }}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Review
+                        </a>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">All caught up!</h3>
+            <p class="mt-2 text-sm text-gray-500">No pending approvals at the moment.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
